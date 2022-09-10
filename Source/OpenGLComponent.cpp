@@ -25,6 +25,12 @@ OpenGLComponent::OpenGLComponent()
     // Tell the context to repaint on a loop.
     openGLContext.setContinuousRepainting(true);
     
+    // Setup a pixel format object to tell the context what level of
+    // multisampling to use.
+    OpenGLPixelFormat pixelFormat;
+    pixelFormat.multisamplingLevel = 4; // Change this value to your needs.
+    openGLContext.setPixelFormat(pixelFormat);
+    
     // Finally - we attach the context to this Component.
     openGLContext.attachTo(*this);
     //openGLContext.setOpenGLVersionRequired(OpenGLContext::OpenGLVersion::openGL3_2);
@@ -48,44 +54,44 @@ void OpenGLComponent::newOpenGLContextCreated()
     // Generate 1 more buffer, this time using our IBO variable.
     openGLContext.extensions.glGenBuffers(1, &indexBufferObj);
     
-//    float radius1 = 0.5;
-//
-//    for(double i = 0; i < 2 * M_PI; i += 2 * M_PI / NUMBER_OF_VERTICES){
-//        Vertex v={{ float(cos(i) * radius1), float(sin(i) * radius1 )},{ 0.f, 0.f, 0.f, 1.f }};
-//        vertexBuffer.push_back(v);
-//    }
-  
-
-//
+    //    float radius1 = 0.5;
+    //
+    //    for(double i = 0; i < 2 * M_PI; i += 2 * M_PI / NUMBER_OF_VERTICES){
+    //        Vertex v={{ float(cos(i) * radius1), float(sin(i) * radius1 )},{ 0.f, 0.f, 0.f, 1.f }};
+    //        vertexBuffer.push_back(v);
+    //    }
+    
+    
+    //
     // Create four vertices each with a different colour.
     vertexBuffer = {
-           // Vertex 0
-           {
-               { -0.5f, 0.5f },        // (-0.5, 0.5)
-               { 1.f, 0.f, 0.f, 1.f }  // Red
-           },
-           // Vertex 1
-           {
-               { 0.5f, 0.5f },         // (0.5, 0.5)
-               { 1.f, 0.5f, 0.f, 1.f } // Orange
-           },
-           // Vertex 2
-           {
-               { 0.5f, -0.5f },        // (0.5, -0.5)
-               { 1.f, 1.f, 0.f, 1.f }  // Yellow
-           },
-           // Vertex 3
-           {
-               { -0.5f, -0.5f },       // (-0.5, -0.5)
-               { 1.f, 0.f, 1.f, 1.f }  // Purple
-           }
-       };
-
-        // We need 6 indices, 1 for each corner of the two triangles.
-        indexBuffer = {
-         0, 1, 2,
-         0, 2, 3
-        };
+        // Vertex 0
+        {
+            { -0.5f, 0.5f },        // (-0.5, 0.5)
+            { 1.f, 0.f, 0.f, 1.f }  // Red
+        },
+        // Vertex 1
+        {
+            { 0.5f, 0.5f },         // (0.5, 0.5)
+            { 1.f, 0.5f, 0.f, 1.f } // Orange
+        },
+        // Vertex 2
+        {
+            { 0.5f, -0.5f },        // (0.5, -0.5)
+            { 1.f, 1.f, 0.f, 1.f }  // Yellow
+        },
+        // Vertex 3
+        {
+            { -0.5f, -0.5f },       // (-0.5, -0.5)
+            { 1.f, 0.f, 1.f, 1.f }  // Purple
+        }
+    };
+    
+    // We need 6 indices, 1 for each corner of the two triangles.
+    indexBuffer = {
+        0, 1, 2,
+        0, 2, 3
+    };
     
     // Bind the VBO.
     openGLContext.extensions.glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObj);
@@ -129,21 +135,20 @@ void OpenGLComponent::newOpenGLContextCreated()
             {
                 float x1=20.0/255.0;
                 float x2=47.0/255.0;
-
+            
                  vec4 colour2 = vec4(x1,x1,x2,1.0);
                  vec4 colour1 = vec4 (165.0/255.0, 43.0/255.0,90.0/255.0, 1.0);
                  float distance1 = distance (gl_FragCoord.xy, vec2 (600.0, 600.0));
-
+            
                  float innerRadius = 200.0;
                  float outerRadius = 210.0;
-
+            
                 if (distance1 < innerRadius)
                     gl_FragColor = colour1;
                 else if (distance1 > outerRadius)
                     gl_FragColor = colour2;
                 else
                     gl_FragColor = mix (colour1, colour2, (distance1 - innerRadius) / (outerRadius - innerRadius));
-
             }
             )";
     
