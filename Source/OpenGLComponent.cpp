@@ -67,22 +67,22 @@ void OpenGLComponent::newOpenGLContextCreated()
     vertexBuffer = {
         // Vertex 0
         {
-            { -0.5f, 0.5f },        // (-0.5, 0.5)
+            { -1.0f, 1.0f },        // (-0.5, 0.5)
             { 1.f, 0.f, 0.f, 1.f }  // Red
         },
         // Vertex 1
         {
-            { 0.5f, 0.5f },         // (0.5, 0.5)
+            { 1.0f, 1.0f },         // (0.5, 0.5)
             { 1.f, 0.5f, 0.f, 1.f } // Orange
         },
         // Vertex 2
         {
-            { 0.5f, -0.5f },        // (0.5, -0.5)
+            { 1.0f, 0.0f },        // (0.5, -0.5)
             { 1.f, 1.f, 0.f, 1.f }  // Yellow
         },
         // Vertex 3
         {
-            { -0.5f, -0.5f },       // (-0.5, -0.5)
+            { -1.0f, 0.0f },       // (-0.5, -0.5)
             { 1.f, 0.f, 1.f, 1.f }  // Purple
         }
     };
@@ -131,21 +131,23 @@ void OpenGLComponent::newOpenGLContextCreated()
     fragmentShader =
             R"(
             varying vec4 frag_Color;
+              uniform vec2  u_resolution;
             void main()
             {
                 float x1=20.0/255.0;
                 float x2=47.0/255.0;
-            
                  vec4 colour2 = vec4(x1,x1,x2,1.0);
                  vec4 colour1 = vec4 (165.0/255.0, 43.0/255.0,90.0/255.0, 1.0);
-                 float distance1 = distance (gl_FragCoord.xy, vec2 (600.0, 600.0));
+                vec2 currentP=(gl_FragCoord.xy/u_resolution)-1.0;
+                 float distance1 = distance (currentP, vec2(-0.65,0.5));
+                float distance2 = distance (currentP, vec2(0.0,0.5));
+                 float distance3 = distance (currentP, vec2(0.65,0.5));
+                 float innerRadius =0.2;
+                 float outerRadius = 0.2005;
             
-                 float innerRadius = 200.0;
-                 float outerRadius = 210.0;
-            
-                if (distance1 < innerRadius)
+                if (distance1 < innerRadius||distance2 < innerRadius||distance3 < innerRadius)
                     gl_FragColor = colour1;
-                else if (distance1 > outerRadius)
+                else if (distance1 > outerRadius||distance2 > outerRadius ||distance3 > outerRadius)
                     gl_FragColor = colour2;
                 else
                     gl_FragColor = mix (colour1, colour2, (distance1 - innerRadius) / (outerRadius - innerRadius));
@@ -166,6 +168,8 @@ void OpenGLComponent::newOpenGLContextCreated()
     {
         // No compilation errors - set the shader program to be active
         shaderProgram->use();
+        shaderProgram->setUniform("u_resolution", 600.0, 600.0);
+
     }
     else
     {
@@ -173,7 +177,6 @@ void OpenGLComponent::newOpenGLContextCreated()
         // Check the output window of your IDE to see what the error might be.
         jassertfalse;
     }
-    glLineWidth(5);
     
 }
 
