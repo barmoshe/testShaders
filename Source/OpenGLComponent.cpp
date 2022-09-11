@@ -143,9 +143,9 @@ void OpenGLComponent::newOpenGLContextCreated()
                 float distance2 = distance (currentP, vec2(0.0,0.5));
                  float distance3 = distance (currentP, vec2(0.65,0.5));
                  float innerRadius =0.2;
-                 float outerRadius = 0.2005;
+                 float outerRadius = 0.3;
             
-                if (distance1 < innerRadius||distance2 < innerRadius||distance3 < innerRadius)
+                if ((distance1 < innerRadius&&currentP.x<-0.65)||(distance2 < innerRadius&&currentP.x<0.0&&currentP.y<0.5)||distance3 < innerRadius)
                     gl_FragColor = colour1;
                 else if (distance1 > outerRadius||distance2 > outerRadius ||distance3 > outerRadius)
                     gl_FragColor = colour2;
