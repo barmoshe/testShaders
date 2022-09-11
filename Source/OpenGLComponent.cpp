@@ -25,12 +25,12 @@ OpenGLComponent::OpenGLComponent()
     // Tell the context to repaint on a loop.
     openGLContext.setContinuousRepainting(true);
     
+    openGLContext.setMultisamplingEnabled(true);
     // Setup a pixel format object to tell the context what level of
     // multisampling to use.
     OpenGLPixelFormat pixelFormat;
     pixelFormat.multisamplingLevel = 4; // Change this value to your needs.
     openGLContext.setPixelFormat(pixelFormat);
-    
     // Finally - we attach the context to this Component.
     openGLContext.attachTo(*this);
     //openGLContext.setOpenGLVersionRequired(OpenGLContext::OpenGLVersion::openGL3_2);
@@ -48,6 +48,7 @@ void OpenGLComponent::paint (juce::Graphics& g)
 
 void OpenGLComponent::newOpenGLContextCreated()
 {
+    
     // Generate 1 buffer, using our vbo variable to store its ID.
     openGLContext.extensions.glGenBuffers(1, &vertexBufferObj);
     
@@ -61,7 +62,7 @@ void OpenGLComponent::newOpenGLContextCreated()
     //        vertexBuffer.push_back(v);
     //    }
     
-    
+   
     //
     // Create four vertices each with a different colour.
     vertexBuffer = {
@@ -77,12 +78,12 @@ void OpenGLComponent::newOpenGLContextCreated()
         },
         // Vertex 2
         {
-            { 1.0f, 0.0f },        // (0.5, -0.5)
+            { 1.0f, -1.0f },        // (0.5, -0.5)
             { 1.f, 1.f, 0.f, 1.f }  // Yellow
         },
         // Vertex 3
         {
-            { -1.0f, 0.0f },       // (-0.5, -0.5)
+            { -1.0f, -1.0f },       // (-0.5, -0.5)
             { 1.f, 0.f, 1.f, 1.f }  // Purple
         }
     };
@@ -132,25 +133,48 @@ void OpenGLComponent::newOpenGLContextCreated()
             R"(
             varying vec4 frag_Color;
               uniform vec2  u_resolution;
+            float aspect = u_resolution.x/ u_resolution.y;
+            vec2 px = vec2(1.0/u_resolution.x, 1.0/u_resolution.y);
+
+            float getDistance(vec2 pixelCoord, vec2 playerCoord) {
+                vec2 p = playerCoord * px * vec2(1.0, 1.0/aspect);
+                // pixelCoord is normalized, but playerCoord is passed in as-is
+                return distance(pixelCoord, p);
+            }
             void main()
             {
                 float x1=20.0/255.0;
                 float x2=47.0/255.0;
                  vec4 colour2 = vec4(x1,x1,x2,1.0);
                  vec4 colour1 = vec4 (165.0/255.0, 43.0/255.0,90.0/255.0, 1.0);
+                vec4 colour3 = vec4 (255.0/255.0, 20.0/255.0,48.0/255.0, 1.0);
+
                 vec2 currentP=(gl_FragCoord.xy/u_resolution)-1.0;
-                 float distance1 = distance (currentP, vec2(-0.65,0.5));
-                float distance2 = distance (currentP, vec2(0.0,0.5));
-                 float distance3 = distance (currentP, vec2(0.65,0.5));
+                 float distance1 = distance (currentP, vec2(-0.65,0.0));
+                float distance2 = distance (currentP, vec2(0.0,0.0));
+                 float distance3 = distance (currentP, vec2(0.65,0.0));
                  float innerRadius =0.2;
                  float outerRadius = 0.3;
             
-                if ((distance1 < innerRadius&&currentP.x<-0.65)||(distance2 < innerRadius&&currentP.x<0.0&&currentP.y<0.5)||distance3 < innerRadius)
-                    gl_FragColor = colour1;
-                else if (distance1 > outerRadius||distance2 > outerRadius ||distance3 > outerRadius)
-                    gl_FragColor = colour2;
+                if (distance1 < innerRadius||(distance2 < innerRadius)||distance3 < innerRadius)
+                    if(distance1 < innerRadius)
+                        if(currentP.x<-0.65)
+                            gl_FragColor = colour1;
+                        else
+                            gl_FragColor = colour3;
+                    else
+                        if(distance2 < innerRadius)
+                            if(currentP.x<0.0&&currentP.y<0.0)
+                                gl_FragColor = colour1;
+                            else
+                                gl_FragColor = colour3;
+                        else
+                            gl_FragColor = colour1;
                 else
-                    gl_FragColor = mix (colour1, colour2, (distance1 - innerRadius) / (outerRadius - innerRadius));
+                    if (distance1 > outerRadius||distance2 > outerRadius ||distance3 > outerRadius)
+                        gl_FragColor = colour2;
+                    else
+                        gl_FragColor = mix (colour1, colour2, (distance1 - innerRadius) / (outerRadius - innerRadius));
             }
             )";
     
@@ -168,7 +192,7 @@ void OpenGLComponent::newOpenGLContextCreated()
     {
         // No compilation errors - set the shader program to be active
         shaderProgram->use();
-        shaderProgram->setUniform("u_resolution", 600.0, 600.0);
+        shaderProgram->setUniform("u_resolution", 400.0, 100.0);
 
     }
     else
@@ -182,8 +206,10 @@ void OpenGLComponent::newOpenGLContextCreated()
 
 void OpenGLComponent::renderOpenGL()
 {
+    
     // Clear the screen by filling it with black.
     OpenGLHelpers::clear(Colours::whitesmoke);
+ 
     // Tell the renderer to use this shader program
     shaderProgram->use();
     openGLContext.extensions.glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObj);
@@ -217,6 +243,7 @@ void OpenGLComponent::renderOpenGL()
                                                    // the start of this attribute.
                                                    );
     openGLContext.extensions.glEnableVertexAttribArray(1);
+    glEnable(GL_MULTISAMPLE);
     glDrawElements(
                    GL_TRIANGLE_FAN,       // Tell OpenGL to render triangles.
                    indexBuffer.size(), // How many indices we have.
@@ -224,6 +251,7 @@ void OpenGLComponent::renderOpenGL()
                    nullptr             // We already gave OpenGL our indices so we don't
                    // need to pass that again here, so pass nullptr.
                    );
+   
     openGLContext.extensions.glDisableVertexAttribArray(0);
     openGLContext.extensions.glDisableVertexAttribArray(1);
 }
