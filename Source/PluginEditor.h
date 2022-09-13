@@ -30,6 +30,8 @@ private:
     // access the processor object that created it.
     TestShadersAudioProcessor& audioProcessor;
     // Create an instance of the OpenGLComponent.
-       OpenGLComponent openGLComponent;
+       OpenGLComponent openGLComponent1;
+    OpenGLComponent openGLComponent2;
+
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TestShadersAudioProcessorEditor)
 };
