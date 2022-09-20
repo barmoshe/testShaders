@@ -37,6 +37,18 @@ private:
         float position[2];
         float colour[4];
     };
+    struct Slice
+    {
+        float start;
+        float lenght;
+        std::array<double, 4> slicesColor;
+    };
+    struct Circle
+    {
+        float radius;
+        float lineWidth;
+        std::vector<Slice> slices;
+    };
     
     std::vector<Vertex> vertexBuffer;
     std::vector<unsigned int> indexBuffer;

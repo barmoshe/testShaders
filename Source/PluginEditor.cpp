@@ -17,8 +17,7 @@ TestShadersAudioProcessorEditor::TestShadersAudioProcessorEditor (TestShadersAud
     // editor's size to whatever you need it to be.
     setSize (600, 600);
  // Add the child Component and make it visible.
-    addAndMakeVisible(openGLComponent1);
-    addAndMakeVisible(openGLComponent2);
+    addAndMakeVisible(openGLComponent);
 
 }
 
@@ -36,8 +35,7 @@ void TestShadersAudioProcessorEditor::paint (juce::Graphics& g)
 
 void TestShadersAudioProcessorEditor::resized()
 {
-    openGLComponent1.setBounds(0,200, 400, 200);
-    openGLComponent2.setBounds(0,0, 400, 200);
+    openGLComponent.setBounds(0,200, 400, 200);
 
     // This is generally where you'll want to lay out the positions of any
     // subcomponents in your editor..

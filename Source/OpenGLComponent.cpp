@@ -10,7 +10,6 @@
 
 #include <JuceHeader.h>
 #include "OpenGLComponent.h"
-#define NUMBER_OF_VERTICES 1000
 using namespace ::juce::gl;
 
 //==============================================================================
@@ -34,6 +33,12 @@ OpenGLComponent::OpenGLComponent()
     // Finally - we attach the context to this Component.
     openGLContext.attachTo(*this);
     //openGLContext.setOpenGLVersionRequired(OpenGLContext::OpenGLVersion::openGL3_2);
+    
+    Circle circle ;
+    circle.radius=0.2;
+    circle.lineWidth=0.012;
+    
+
 }
 
 OpenGLComponent::~OpenGLComponent()
@@ -68,23 +73,19 @@ void OpenGLComponent::newOpenGLContextCreated()
     vertexBuffer = {
         // Vertex 0
         {
-            { -1.0f, 1.0f },        // (-0.5, 0.5)
-            { 1.f, 0.f, 0.f, 1.f }  // Red
+            { -1.0f, 1.0f }        // (-0.5, 0.5)
         },
         // Vertex 1
         {
-            { 1.0f, 1.0f },         // (0.5, 0.5)
-            { 1.f, 0.5f, 0.f, 1.f } // Orange
+            { 1.0f, 1.0f }        // (0.5, 0.5)
         },
         // Vertex 2
         {
-            { 1.0f, -1.0f },        // (0.5, -0.5)
-            { 1.f, 1.f, 0.f, 1.f }  // Yellow
+            { 1.0f, -1.0f }        // (0.5, -0.5)
         },
         // Vertex 3
         {
-            { -1.0f, -1.0f },       // (-0.5, -0.5)
-            { 1.f, 0.f, 1.f, 1.f }  // Purple
+            { -1.0f, -1.0f }      // (-0.5, -0.5)
         }
     };
     
@@ -148,31 +149,43 @@ void OpenGLComponent::newOpenGLContextCreated()
                  vec4 colour2 = vec4(x1,x1,x2,1.0);
                  vec4 colour1 = vec4 (165.0/255.0, 43.0/255.0,90.0/255.0, 1.0);
                 vec4 colour3 = vec4 (255.0/255.0, 20.0/255.0,48.0/255.0, 1.0);
-
+                vec4  white =vec4 (1.0,1.0,1.0,1.0);
                 vec2 currentP=(gl_FragCoord.xy/u_resolution)-1.0;
                 float yOffset=u_resolution.x/u_resolution.y;
                  float distance1 = distance (vec2(currentP.x,currentP.y/yOffset), vec2(0.0,0.0));
-                 float innerRadius =0.2;
-                 float outerRadius = 0.22;
+                 float innerRadius =0.35;
+                float lineWidth= 0.008;
+                 float outerRadius =innerRadius+lineWidth;
+                float outerRadiusBorder =outerRadius+lineWidth;
+                    if(distance1 < outerRadius)
+                        gl_FragColor = white;
+            else
+                    if (distance1 > outerRadiusBorder)
+                        gl_FragColor = colour2;
+                    else
+                        gl_FragColor = mix (white, colour2, (distance1 - outerRadius) / (outerRadiusBorder - outerRadius));
+                       if(distance1<outerRadius){
                 if(currentP.x<0.0)
                     if(distance1 < innerRadius)
-                        gl_FragColor = colour1;
+                       gl_FragColor = colour1;
                     else
-                        
+
                     if (distance1 > outerRadius)
                         gl_FragColor = colour2;
                     else
-                        gl_FragColor = mix (colour1, colour2, (distance1 - innerRadius) / (outerRadius - innerRadius));
+                        gl_FragColor = mix (colour1, white, (distance1 - innerRadius) / (outerRadius - innerRadius));
                 else
-                    
-                    if(distance1 < innerRadius)
-                        gl_FragColor = colour3;
-                    else
-                        
-                    if (distance1 > outerRadius)
+
+                   if (distance1 > outerRadius)
                         gl_FragColor = colour2;
                     else
-                        gl_FragColor = mix (colour3, colour2, (distance1 - innerRadius) / (outerRadius - innerRadius));            }
+                                               if(currentP.x>-lineWidth&&currentP.x<lineWidth)
+                                                   gl_FragColor = white;
+
+                                           else
+                        gl_FragColor = mix (colour3, white, (distance1 - innerRadius) / (outerRadius - innerRadius));
+            
+            }}
             )";
     
     
@@ -225,20 +238,7 @@ void OpenGLComponent::renderOpenGL()
                                                    );
     openGLContext.extensions.glEnableVertexAttribArray(0);
     
-    // Enable to colour attribute.
-    openGLContext.extensions.glVertexAttribPointer(
-                                                   1,                              // This attribute has an index of 1
-                                                   4,                              // This time we have four values for the
-                                                   // attribute (r, g, b, a)
-                                                   GL_FLOAT,
-                                                   GL_FALSE,
-                                                   sizeof(Vertex),
-                                                   (GLvoid*)(sizeof(float) * 2)    // This attribute comes after the
-                                                   // position attribute in the Vertex
-                                                   // struct, so we need to skip over the
-                                                   // size of the position array to find
-                                                   // the start of this attribute.
-                                                   );
+   
     openGLContext.extensions.glEnableVertexAttribArray(1);
     glEnable(GL_MULTISAMPLE);
     glDrawElements(
