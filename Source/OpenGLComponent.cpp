@@ -34,11 +34,10 @@ OpenGLComponent::OpenGLComponent()
     openGLContext.attachTo(*this);
     //openGLContext.setOpenGLVersionRequired(OpenGLContext::OpenGLVersion::openGL3_2);
     
-    Circle circle ;
     circle.radius=0.2;
     circle.lineWidth=0.012;
     
-
+    
 }
 
 OpenGLComponent::~OpenGLComponent()
@@ -67,7 +66,7 @@ void OpenGLComponent::newOpenGLContextCreated()
     //        vertexBuffer.push_back(v);
     //    }
     
-   
+    
     //
     // Create four vertices each with a different colour.
     vertexBuffer = {
@@ -103,7 +102,7 @@ void OpenGLComponent::newOpenGLContextCreated()
                                           GL_ARRAY_BUFFER,                        // The type of data we're sending.
                                           sizeof(Vertex) * vertexBuffer.size(),   // The size (in bytes) of the data.
                                           vertexBuffer.data(),                    // A pointer to the actual data.
-                                          GL_STATIC_DRAW                          // How we want the buffer to be drawn.
+                                          GL_DYNAMIC_DRAW                          // How we want the buffer to be drawn.
                                           );
     
     // Bind the IBO.
@@ -114,78 +113,68 @@ void OpenGLComponent::newOpenGLContextCreated()
                                           GL_ELEMENT_ARRAY_BUFFER,
                                           sizeof(unsigned int) * indexBuffer.size(),
                                           indexBuffer.data(),
-                                          GL_STATIC_DRAW
+                                          GL_DYNAMIC_DRAW
                                           );
     
     
     vertexShader =
                 R"(
            attribute vec4 a_Position;
-            attribute vec4 a_Color;
-           varying vec4 frag_Color;
-        
             void main(){
-               frag_Color = a_Color;
                gl_Position = a_Position;
             }
         )";
     
     fragmentShader =
             R"(
-            varying vec4 frag_Color;
-              uniform vec2  u_resolution;
-            float aspect = u_resolution.x/ u_resolution.y;
-            vec2 px = vec2(1.0/u_resolution.x, 1.0/u_resolution.y);
-
-            float getDistance(vec2 pixelCoord, vec2 playerCoord) {
-                vec2 p = playerCoord * px * vec2(1.0, 1.0/aspect);
-                // pixelCoord is normalized, but playerCoord is passed in as-is
-                return distance(pixelCoord, p);
-            }
-            void main()
-            {
-                float x1=20.0/255.0;
-                float x2=47.0/255.0;
-                 vec4 colour2 = vec4(x1,x1,x2,1.0);
-                 vec4 colour1 = vec4 (165.0/255.0, 43.0/255.0,90.0/255.0, 1.0);
-                vec4 colour3 = vec4 (255.0/255.0, 20.0/255.0,48.0/255.0, 1.0);
-                vec4  white =vec4 (1.0,1.0,1.0,1.0);
-                vec2 currentP=(gl_FragCoord.xy/u_resolution)-1.0;
-                float yOffset=u_resolution.x/u_resolution.y;
-                 float distance1 = distance (vec2(currentP.x,currentP.y/yOffset), vec2(0.0,0.0));
-                 float innerRadius =0.35;
-                float lineWidth= 0.008;
-                 float outerRadius =innerRadius+lineWidth;
-                float outerRadiusBorder =outerRadius+lineWidth;
-                    if(distance1 < outerRadius)
-                        gl_FragColor = white;
-            else
-                    if (distance1 > outerRadiusBorder)
-                        gl_FragColor = colour2;
-                    else
-                        gl_FragColor = mix (white, colour2, (distance1 - outerRadius) / (outerRadiusBorder - outerRadius));
-                       if(distance1<outerRadius){
-                if(currentP.x<0.0)
-                    if(distance1 < innerRadius)
-                       gl_FragColor = colour1;
-                    else
-
-                    if (distance1 > outerRadius)
-                        gl_FragColor = colour2;
-                    else
-                        gl_FragColor = mix (colour1, white, (distance1 - innerRadius) / (outerRadius - innerRadius));
-                else
-
-                   if (distance1 > outerRadius)
-                        gl_FragColor = colour2;
-                    else
-                                               if(currentP.x>-lineWidth&&currentP.x<lineWidth)
-                                                   gl_FragColor = white;
-
-                                           else
-                        gl_FragColor = mix (colour3, white, (distance1 - innerRadius) / (outerRadius - innerRadius));
+              struct Slice {
+                  float start;
+                  float lenght;
+                  vec4 colour;
+              };
+              uniform vec2 u_resolution;
+              uniform float innerRadius;
+              uniform float lineWidth;
+              void main() {
+                  vec4 backgroundColour = vec4(20.0 / 255.0, 20.0 / 255.0, 47.0 / 255.0, 1.0);//background
+                  vec4 kickColour = vec4(165.0 / 255.0, 43.0 / 255.0, 90.0 / 255.0, 1.0);//kick color
+                  vec4 clapColour = vec4(255.0 / 255.0, 20.0 / 255.0, 48.0 / 255.0, 1.0);//clap color
+                  vec4 white = vec4(1.0, 1.0, 1.0, 1.0);
+                  vec2 currentP = (gl_FragCoord.xy / u_resolution) - 1.0;//currnt point in x,y
+                  float yOffset = u_resolution.x / u_resolution.y;
+                  float distance1 = distance(vec2(currentP.x, currentP.y / yOffset), vec2(0.0, 0.0));
+                  float outerRadius = innerRadius + lineWidth;
+                  float outerRadiusBorder = outerRadius + lineWidth;
+                  if(distance1 < outerRadius) {//inside the circle border
+                      gl_FragColor = white;
+                      if(distance1 < innerRadius)//inside circle it self
+                                                     //**(here will be slices logic)**
+                          if(currentP.x > 0.0)
+                              if(currentP.x < lineWidth / 2.0)//if in the middle line from the positive side
+                                  gl_FragColor = white;
+                              else
+                                  gl_FragColor = kickColour;
+                          else if(currentP.x > -lineWidth / 2.0)//if in the middle line from the negative side
+                              gl_FragColor = white;
+                          else
+                              gl_FragColor = clapColour;
+                      else//anti alias with border
+                      if(currentP.x > 0.0)
+                          if(currentP.x < lineWidth / 2.0)
+                              gl_FragColor = white;
+                          else
+                              gl_FragColor = mix(kickColour, white, (distance1 - innerRadius) / (outerRadius - innerRadius));
+                      else if(currentP.x > -lineWidth / 2.0)
+                          gl_FragColor = white;
+                      else
+                          gl_FragColor = mix(clapColour, white, (distance1 - innerRadius) / (outerRadius - innerRadius));
             
-            }}
+                  } else if(distance1 > outerRadiusBorder)//background color
+                      gl_FragColor = backgroundColour;
+                  else//anti aliasd border with background
+                      gl_FragColor = mix(white, backgroundColour, (distance1 - outerRadius) / (outerRadiusBorder - outerRadius));
+            
+              }
             )";
     
     
@@ -203,7 +192,12 @@ void OpenGLComponent::newOpenGLContextCreated()
         // No compilation errors - set the shader program to be active
         shaderProgram->use();
         shaderProgram->setUniform("u_resolution", 400.0, 200.0);
-
+        shaderProgram->setUniform("innerRadius", circle.radius);
+        shaderProgram->setUniform("lineWidth", circle.lineWidth);
+        shaderProgram->setUniform("activeSlices", circle.activeSlices);
+        
+        
+        
     }
     else
     {
@@ -218,8 +212,8 @@ void OpenGLComponent::renderOpenGL()
 {
     
     // Clear the screen by filling it with black.
-    OpenGLHelpers::clear(Colours::whitesmoke);
- 
+    OpenGLHelpers::clear(Colours::cyan);
+    
     // Tell the renderer to use this shader program
     shaderProgram->use();
     openGLContext.extensions.glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObj);
@@ -238,8 +232,21 @@ void OpenGLComponent::renderOpenGL()
                                                    );
     openGLContext.extensions.glEnableVertexAttribArray(0);
     
-   
-    openGLContext.extensions.glEnableVertexAttribArray(1);
+    //    // Enable to colour attribute.
+    //    openGLContext.extensions.glVertexAttribPointer(
+    //                                                   1,                              // This attribute has an index of 1
+    //                                                   4,                              // This time we have four values for the
+    //                                                   // attribute (r, g, b, a)
+    //                                                   GL_FLOAT,
+    //                                                   GL_FALSE,
+    //                                                   sizeof(Vertex),
+    //                                                   (GLvoid*)(sizeof(float) * 2)    // This attribute comes after the
+    //                                                   // position attribute in the Vertex
+    //                                                   // struct, so we need to skip over the
+    //                                                   // size of the position array to find
+    //                                                   // the start of this attribute.
+    //                                                   );
+    //    openGLContext.extensions.glEnableVertexAttribArray(1);
     glEnable(GL_MULTISAMPLE);
     glDrawElements(
                    GL_TRIANGLE_FAN,       // Tell OpenGL to render triangles.
@@ -248,9 +255,8 @@ void OpenGLComponent::renderOpenGL()
                    nullptr             // We already gave OpenGL our indices so we don't
                    // need to pass that again here, so pass nullptr.
                    );
-   
+    
     openGLContext.extensions.glDisableVertexAttribArray(0);
-    openGLContext.extensions.glDisableVertexAttribArray(1);
 }
 
 void OpenGLComponent::openGLContextClosing()

@@ -41,13 +41,14 @@ private:
     {
         float start;
         float lenght;
-        std::array<double, 4> slicesColor;
+        float colour[4];
     };
     struct Circle
     {
         float radius;
         float lineWidth;
-        std::vector<Slice> slices;
+        int activeSlices = 14;
+        float slices[128];
     };
     
     std::vector<Vertex> vertexBuffer;
@@ -57,7 +58,7 @@ private:
     std::string vertexShader;
     std::string fragmentShader;
     std::unique_ptr<OpenGLShaderProgram> shaderProgram;
-
+    Circle circle;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OpenGLComponent)
 };
