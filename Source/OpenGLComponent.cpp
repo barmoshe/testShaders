@@ -32,29 +32,34 @@ OpenGLComponent::OpenGLComponent()
     openGLContext.setPixelFormat(pixelFormat);
     // Finally - we attach the context to this Component.
     openGLContext.attachTo(*this);
-    //openGLContext.setOpenGLVersionRequired(OpenGLContext::OpenGLVersion::openGL3_2);
+    //openGLContext.setOpenGLVersionRequired(OpenGLContext::OpenGLVersion::openGL3_2)
     
     circle.radius=0.5;
-    circle.lineWidth=0.012;
-    circle.activeSlices=10;
+    circle.lineWidth=0.044*circle.radius;
+    circle.activeSlices=42;
     circle.sliceRed[0]=0.0;
 
     for(int i =0;i< circle.activeSlices;i++)
     {
         if(i>0)
         circle.sliceRed[i]=circle.sliceRed[i-1]+circle.sliceLen[i-1];
-        circle.sliceGreen[i]=0.0;
-        circle.sliceBlue[i]=0.0;
-        circle.sliceAlpha[i]=1.0;
+        circle.sliceGreen[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);;
+        circle.sliceBlue[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);;
+        circle.sliceAlpha[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);;
         circle.sliceStart[i]= i/circle.activeSlices;
         circle.sliceLen[i]=1.0/circle.activeSlices;
         if(i>0)
             circle.sliceStart[i]=circle.sliceStart[i-1]+circle.sliceLen[i];
         std::cout<<"\n["<<i<<"]\nred - "<< circle.sliceRed[i]<<"\nGreen - "<< circle.sliceGreen[i]<<"\nblue -"<< circle.sliceBlue[i];
     }
-    
-}
+    circle.sliceRed[0]=0.0;
+    circle.sliceGreen[0]=1.0;
+    circle.sliceBlue[0]=0.5;
+    circle.sliceRed[1]=0.0;
+    circle.sliceGreen[1]=0.5;
+    circle.sliceBlue[1]=0.5;
 
+}
 OpenGLComponent::~OpenGLComponent()
 {
     // Tell the context to stop using this Component.
@@ -298,7 +303,7 @@ void OpenGLComponent::newOpenGLContextCreated()
 
 void OpenGLComponent::renderOpenGL()
 {
-  
+    srand(time(0));
     // Clear the screen by filling it with black.
     OpenGLHelpers::clear(Colours::black);
     
@@ -354,7 +359,21 @@ void OpenGLComponent::renderOpenGL()
     shaderProgram->setUniform("sliceBlue", circle.sliceBlue,128);
     shaderProgram->setUniform("sliceGreen", circle.sliceGreen,128);
     shaderProgram->setUniform("sliceLen", circle.sliceLen,128);
-    
+    circle.activeSlices=(rand() % 42) + 1;
+    for(int i =0;i< circle.activeSlices;i++)
+    {
+        if(i>0)
+        circle.sliceRed[i]=circle.sliceRed[i-1]+circle.sliceLen[i-1];
+        circle.sliceGreen[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+        circle.sliceBlue[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+        circle.sliceAlpha[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+        circle.sliceStart[i]= i/circle.activeSlices;
+        circle.sliceLen[i]=1.0/circle.activeSlices;
+        if(i>0)
+            circle.sliceStart[i]=circle.sliceStart[i-1]+circle.sliceLen[i];
+        std::cout<<"\n["<<i<<"]\nred - "<< circle.sliceRed[i]<<"\nGreen - "<< circle.sliceGreen[i]<<"\nblue -"<< circle.sliceBlue[i];
+    }
+
 }
 
 void OpenGLComponent::openGLContextClosing()
