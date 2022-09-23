@@ -35,7 +35,7 @@ void TestShadersAudioProcessorEditor::paint (juce::Graphics& g)
 
 void TestShadersAudioProcessorEditor::resized()
 {
-    openGLComponent.setBounds(0,200, 400, 200);
+    openGLComponent.setBounds(0,0, 600, 600);
 
     // This is generally where you'll want to lay out the positions of any
     // subcomponents in your editor..
