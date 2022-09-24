@@ -30,9 +30,12 @@ private:
     // access the processor object that created it.
     TestShadersAudioProcessor& audioProcessor;
     // Create an instance of the OpenGLComponent.
-       OpenGLComponent openGLComponent;
-    OpenGLComponent openGLComponent1;
-    std::vector<OpenGLComponent> openGLComponents;
+//       OpenGLComponent openGLComponent;
+//    OpenGLComponent openGLComponent1;
+    bool first=true;
 
+    std::vector<std::unique_ptr<OpenGLComponent>> openGLComponents;
+
+    
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (TestShadersAudioProcessorEditor)
 };

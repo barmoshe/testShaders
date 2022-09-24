@@ -1,0 +1,37 @@
+/* 
+ Localizable.strings
+ testShaders
+ 
+ Created by Bar moshe on 24/09/2022.
+ 
+ */
+vec4 kickColour = vec4(165.0 / 255.0, 43.0 / 255.0, 90.0 / 255.0, 1.0);//kick color
+vec4 clapColour = vec4(255.0 / 255.0, 20.0 / 255.0, 48.0 / 255.0, 1.0);//clap color
+if(distance1 < outerRadius) {//inside the circle border
+    gl_FragColor = white;
+    if(distance1 < innerRadius)//inside circle it self
+    //**(here will be slices logic)**
+    if(currentP.x > 0.0)
+if(currentP.x < lineWidth / 2.0)//if in the middle line from the positive side
+    gl_FragColor = white;
+    else
+    gl_FragColor = kickColour;
+    else if(currentP.x > -lineWidth / 2.0)//if in the middle line from the negative side
+gl_FragColor = white;
+else
+gl_FragColor = clapColour;
+else//anti alias with border
+if(currentP.x > 0.0)
+if(currentP.x < lineWidth / 2.0)
+    gl_FragColor = white;
+    else
+    gl_FragColor = mix(kickColour, white, (distance1 - innerRadius) / (outerRadius - innerRadius));
+    else if(currentP.x > -lineWidth / 2.0)
+gl_FragColor = white;
+else
+gl_FragColor = mix(clapColour, white, (distance1 - innerRadius) / (outerRadius - innerRadius));
+
+} else if(distance1 > outerRadiusBorder)//background color
+gl_FragColor = backgroundColour;
+else//anti aliasd border with background
+gl_FragColor = mix(white, backgroundColour, (distance1 - outerRadius) / (outerRadiusBorder - outerRadius));
