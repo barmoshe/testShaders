@@ -1,0 +1,1 @@
+/Users/barmoshe/Library/Developer/Xcode/DerivedData/testShaders-cnscjypdrwyrabclupyqktiamfky/Build/Intermediates.noindex/ArchiveIntermediates/testShaders - Standalone Plugin/InstallationBuildProductsLocation/Applications/testShaders.app

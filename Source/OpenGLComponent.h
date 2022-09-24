@@ -42,12 +42,12 @@ private:
         float radius;
         float lineWidth;
         int activeSlices = 14;
-        GLfloat sliceStart[128];
-        GLfloat sliceLen[128];
-        GLfloat sliceRed[128];
-        GLfloat sliceGreen[128];
-        GLfloat sliceBlue[128];
-        GLfloat sliceAlpha[128];
+        float sliceStart[128];
+        float sliceLen[128];
+        float sliceRed[128];
+        float sliceGreen[128];
+        float sliceBlue[128];
+        float sliceAlpha[128];
 
 
     };
