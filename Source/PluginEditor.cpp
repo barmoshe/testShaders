@@ -17,7 +17,7 @@ TestShadersAudioProcessorEditor::TestShadersAudioProcessorEditor (TestShadersAud
     // editor's size to whatever you need it to be.
     setSize (1000, 500);
     
-    for (auto i = 0; i < 2; ++i)
+    for (auto i = 0; i < 50; ++i)
     {
         openGLComponents.push_back (std::make_unique<OpenGLComponent>());
         addAndMakeVisible (*openGLComponents.back());
@@ -38,9 +38,9 @@ void TestShadersAudioProcessorEditor::paint (juce::Graphics& g)
     if(first)
         if(openGLComponents.size()>0){
             int index=0;
-            for(int row=0;row<2;row++)
+            for(int row=0;row<5;row++)
             {
-                for(int col=0;col<1;col++)
+                for(int col=0;col<10;col++)
                 {
                     openGLComponents.at(index)->setBounds(col*100,row*100, 100, 100);
                     index+=1;
