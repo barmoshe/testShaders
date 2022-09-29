@@ -146,111 +146,99 @@ void OpenGLComponent::newOpenGLContextCreated()
             #define PI 3.1415926538
             #define ZERO 1e-6
 
-           vec2 middle = vec2(0.0, 0.0);
-           uniform vec2 u_resolution;
-           uniform float radius;
-           uniform float lineWidth;
-           uniform int activeSlices;
-           uniform float sliceStart[128];
-           uniform float sliceLen[128];
-           uniform float sliceRed[128];
-           uniform float sliceGreen[128];
-           uniform float sliceBlue[128];
-           uniform float sliceAlpha[128];
+            vec2 middle = vec2(0.0, 0.0);
+            uniform vec2 u_resolution;
+            uniform float radius;
+            uniform float lineWidth;
+            uniform int activeSlices;
+            uniform float sliceStart[128];
+            uniform float sliceLen[128];
+            uniform float sliceRed[128];
+            uniform float sliceGreen[128];
+            uniform float sliceBlue[128];
+            uniform float sliceAlpha[128];
+            uniform bool changed;
+            vec4 white = vec4(1.0, 1.0, 1.0, 1.0);
 
-           float when_gt(float x, float y) {
-               return max(sign(x - y), 0.0);
-           }
 
-           float when_le(float x, float y) {
-               return 1.0 - when_gt(x, y);
-           }
+            float when_gt(float x, float y) {
+                return max(sign(x - y), 0.0);
+            }
 
-           float when_lt(float x, float y) {
-               return max(sign(y - x), 0.0);
-           }
-           float when_eq(float x, float y) {
-               return 1.0 - abs(sign(x - y));
-           }
+            float when_le(float x, float y) {
+                return 1.0 - when_gt(x, y);
+            }
 
-           float when_neq(float x, float y) {
-               return abs(sign(x - y));
-           }
+            float when_lt(float x, float y) {
+                return max(sign(y - x), 0.0);
+            }
 
-           float when_ge(float x, float y) {
-               return 1.0 - when_lt(x, y);
-           }
+            float when_ge(float x, float y) {
+                return 1.0 - when_lt(x, y);
+            }
 
-           float circleAdd(float x, float y) {
-               x = x + y;
-               x = x * (1.0 - (2.0 * when_lt(x, 0.0)));
-               return x - floor(x);
-           }
+            float distanceToLine(vec2 currentP, float fraq) {
+                float slope = tan(fraq * 2.0 * PI);
+                return (abs((slope * currentP.x) - currentP.y) / sqrt((slope * slope) + 1.0));
+            }
 
-           float is_ge(float x, float y) {
-               return max(when_gt(x, y), when_lt(abs(x - y), ZERO));
-           }
-           vec2 findXY(float angle) {
-               angle = ((360.0 * angle)) * PI / 180.0;
-               return vec2(radius * sin(angle), radius * cos(angle));
-           }
-           float distanceToLine(vec2 currentP, float fraq) {
-               float slope = tan(fraq * 2.0 * PI);
-               return (abs((slope * currentP.x) - currentP.y) / sqrt((slope * slope ) + 1.0));
-           }
-           void main() {
-               vec4 kickColour = vec4(165.0 / 255.0, 43.0 / 255.0, 90.0 / 255.0, 1.0);//kick color
-               vec4 backgroundColour = vec4(20.0 / 255.0, 20.0 / 255.0, 47.0 / 255.0, 1.0);//background
-               vec4 white = vec4(1.0, 1.0, 1.0, 1.0);
-               vec2 currentP = (gl_FragCoord.xy / u_resolution) - 1.0;//currnt point in x,y the middle of the axis is center of shader
-               float yOffset = u_resolution.x / u_resolution.y;
-               float distance1 = distance(vec2(currentP.x, currentP.y / yOffset), vec2(0.0, 0.0));
-               float outerRadius = radius + lineWidth;
-               float outerRadiusBorder = outerRadius + lineWidth;
-               if(when_lt(distance1, outerRadius) == 1.0) { //inside the circle border
-                   int i = 0;
-                   for(i = 0; i < activeSlices; i++) {
-                       float distanceToStart = distanceToLine(currentP, sliceStart[i]);
-                       float distanceToEnd = distanceToLine(currentP, sliceStart[i] + sliceLen[i]);
+            bool pointInSlice(int i, float angleOfP) {
+                return ((when_ge(angleOfP, sliceStart[i]) * when_le(angleOfP, sliceStart[i] + sliceLen[i])) == 1.0);
+            }
+            float calcAngleOfPoint(vec2 currentP) {
+                float angleOfP=atan(currentP.y, currentP.x);
+                angleOfP += when_lt(currentP.y, 0.0) * 2.0 * PI;
+                angleOfP /= (2.0 * PI);
+                return angleOfP;
+                
+            }
+            void paintPoint(int i, float distToPoint, float distanceToStart, float distanceToEnd) {
+                
+                vec4 backgroundColour = vec4(20.0 / 255.0, 20.0 / 255.0, 47.0 / 255.0, 1.0);//background
+                
+                float outerRadius = radius + lineWidth;
+                float outerRadiusBorder = outerRadius + lineWidth;
+                if(when_gt(distToPoint, outerRadiusBorder) == 1.0)//backGround
+                    gl_FragColor = backgroundColour;
+                else if(when_lt(distToPoint, outerRadiusBorder) * when_lt(outerRadius, distToPoint) == 1.0)//anti aliasd border with background
+                    gl_FragColor = mix(white, backgroundColour, (distToPoint - outerRadius) / (outerRadiusBorder - outerRadius));
+                else if(when_lt(distanceToStart, lineWidth / 2.0) + when_lt(distanceToEnd, lineWidth / 2.0) != 0.0)
+                    gl_FragColor = white;
+                else if(when_lt(distToPoint, radius) == 1.0)
+                    gl_FragColor = vec4(sliceRed[i], sliceGreen[i], sliceBlue[i], 1.0);
+                else
+                    gl_FragColor = mix(vec4(sliceRed[i], sliceGreen[i], sliceBlue[i], 1.0), white, (distToPoint - radius) / (outerRadius - radius));
+                
+            }
+            void CalcNewCircle() {
+                
+                vec2 currentP = (gl_FragCoord.xy / u_resolution) - 1.0;//currnt point in x,y the middle of the axis is center of shader
+                float yOffset = u_resolution.x / u_resolution.y;
+                float distToPoint = distance(vec2(currentP.x, currentP.y / yOffset), vec2(0.0, 0.0));
+                for(int i = 0; i < activeSlices; i++) {
+                    float distanceToStart = distanceToLine(currentP, sliceStart[i]);
+                    float distanceToEnd = distanceToLine(currentP, sliceStart[i] + sliceLen[i]);
+                    float angleOfP = calcAngleOfPoint(currentP);
+                    if(pointInSlice(i, angleOfP)) {
+                        paintPoint(i, distToPoint,distanceToStart,distanceToEnd);
+                        break;
+                    } else
+                        gl_FragColor = gl_FragColor;
+                }
+                
+            }
+            void displayTexture() {
+                gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+            }
 
-                       float angleOfP = atan(currentP.y, currentP.x);
-                       angleOfP += when_lt(currentP.y, 0.0) * 2.0 * PI;
-                       angleOfP /= 2.0;
-                       angleOfP /= PI;
+            void main() {
+                if(changed)
+                    CalcNewCircle();
+                else
+                    displayTexture();
+                
+            }
 
-                       if(i == 0) {
-                           if(when_lt((angleOfP - sliceStart[i]), sliceLen[i]) == 1.0) {
-                               if(when_lt(distance1, radius) == 1.0){
-                                   gl_FragColor = vec4(sliceRed[i], sliceGreen[i], sliceBlue[i], 1.0);
-                                if(when_lt(distanceToStart, lineWidth ) + when_lt(distanceToEnd, lineWidth/2.0) != 0.0)
-                                   gl_FragColor = vec4(1.0,1.0,1.0,1.0);
-                               }else
-                                   gl_FragColor = mix(vec4(sliceRed[i], sliceGreen[i], sliceBlue[i], 1.0), white, (distance1 - radius) / (outerRadius - radius));
-            
-                               break;
-                           } else
-                               gl_FragColor = white;
-                       } else {
-                           if((when_ge(angleOfP, sliceStart[i]) * when_le(angleOfP, sliceStart[i] + sliceLen[i])) == 1.0) {
-                                                              if(when_lt(distance1, radius) == 1.0){
-                                                                  gl_FragColor = vec4(sliceRed[i], sliceGreen[i], sliceBlue[i], 1.0);
-                                                               if(when_lt(distanceToStart, lineWidth ) + when_lt(distanceToEnd, lineWidth/2.0) != 0.0)
-                                                                  gl_FragColor = white;
-                                                              }else
-                                                                  gl_FragColor = mix(vec4(sliceRed[i], sliceGreen[i], sliceBlue[i], 1.0), white, (distance1 - radius) / (outerRadius - radius));
-                                           
-                                                              break;
-                           } else {
-                               gl_FragColor = kickColour;
-                           }
-                       }
-                   }
-               } else if(when_lt(distance1, outerRadiusBorder) == 1.0)//anti aliasd border with background
-                   gl_FragColor = mix(white, backgroundColour, (distance1 - outerRadius) / (outerRadiusBorder - outerRadius));
-               else
-                   gl_FragColor = backgroundColour;
-
-           }
 
             )";
             
@@ -279,48 +267,33 @@ void OpenGLComponent::newOpenGLContextCreated()
     
 }
 
-void OpenGLComponent::renderOpenGL()
-{
-    glEnable (GL_BLEND);
-    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    srand(time(0));
-    // Clear the screen by filling it with black.
-    OpenGLHelpers::clear(Colour(20, 20, 47));
-    
-    // Tell the renderer to use this shader program
-    shaderProgram->use();
-    openGLContext.extensions.glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObj);
-    openGLContext.extensions.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferObj);
-    // Enable the position attribute.
+static void enableThePositionAttribute(const juce::OpenGLContext &openGLContext) {
     openGLContext.extensions.glVertexAttribPointer(
                                                    0,              // The attribute's index (AKA location).
                                                    2,              // How many values this attribute contains.
                                                    GL_FLOAT,       // The attribute's type (float).
                                                    GL_FALSE,       // Tells OpenGL NOT to normalise the values.
-                                                   sizeof(Vertex), // How many bytes to move to find the attribute with
+                                                   sizeof(OpenGLComponent::Vertex), // How many bytes to move to find the attribute with
                                                    // the same index in the next vertex.
                                                    nullptr         // How many bytes to move from the start of this vertex
                                                    // to find this attribute (the default is 0 so we just
                                                    // pass nullptr here).
                                                    );
     openGLContext.extensions.glEnableVertexAttribArray(0);
-    
-    //    // Enable to colour attribute.
-    //    openGLContext.extensions.glVertexAttribPointer(
-    //                                                   1,                              // This attribute has an index of 1
-    //                                                   4,                              // This time we have four values for the
-    //                                                   // attribute (r, g, b, a)
-    //                                                   GL_FLOAT,
-    //                                                   GL_FALSE,
-    //                                                   sizeof(Vertex),
-    //                                                   (GLvoid*)(sizeof(float) * 2)    // This attribute comes after the
-    //                                                   // position attribute in the Vertex
-    //                                                   // struct, so we need to skip over the
-    //                                                   // size of the position array to find
-    //                                                   // the start of this attribute.
-    //                                                   );
-    //    openGLContext.extensions.glEnableVertexAttribArray(1);
+}
+
+void OpenGLComponent::renderOpenGL()
+{
+    glEnable (GL_BLEND);
+    glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_MULTISAMPLE);
+    srand(time(0));
+    OpenGLHelpers::clear(Colour(20, 20, 47));
+    shaderProgram->use();
+    openGLContext.extensions.glBindBuffer(GL_ARRAY_BUFFER, vertexBufferObj);
+    openGLContext.extensions.glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indexBufferObj);
+    enableThePositionAttribute(openGLContext);
+
     
     glDrawElements(
                    GL_TRIANGLE_FAN,       // Tell OpenGL to render triangles.
@@ -329,34 +302,37 @@ void OpenGLComponent::renderOpenGL()
                    nullptr             // We already gave OpenGL our indices so we don't
                    // need to pass that again here, so pass nullptr.
                    );
-  
-    openGLContext.extensions.glDisableVertexAttribArray(0);
-    shaderProgram->setUniform("u_resolution", 200.0, 200.0);
-    shaderProgram->setUniform("radius", circle.radius);
-    shaderProgram->setUniform("lineWidth", circle.lineWidth);
-    shaderProgram->setUniform("activeSlices", circle.activeSlices);
-    shaderProgram->setUniform("sliceStart", circle.sliceStart,128);
-    shaderProgram->setUniform("sliceRed", circle.sliceRed,128);
-    shaderProgram->setUniform("sliceBlue", circle.sliceBlue,128);
-    shaderProgram->setUniform("sliceGreen", circle.sliceGreen,128);
-    shaderProgram->setUniform("sliceLen", circle.sliceLen,128);
-//    int rand1=(rand() % 42) + 1;
-//    circle.activeSlices=(rand() % rand1) + 1;
+    
+        openGLContext.extensions.glDisableVertexAttribArray(0);
+        shaderProgram->setUniform("u_resolution",   1000.0, 1000.0);
+        shaderProgram->setUniform("radius", circle.radius);
+        shaderProgram->setUniform("lineWidth", circle.lineWidth);
+        shaderProgram->setUniform("activeSlices", circle.activeSlices);
+        shaderProgram->setUniform("sliceStart", circle.sliceStart,128);
+        shaderProgram->setUniform("sliceRed", circle.sliceRed,128);
+        shaderProgram->setUniform("sliceBlue", circle.sliceBlue,128);
+        shaderProgram->setUniform("sliceGreen", circle.sliceGreen,128);
+        shaderProgram->setUniform("sliceLen", circle.sliceLen,128);
+        shaderProgram->setUniform("changed", firstTime);
+        
+
+        circle.activeSlices=(rand() % 4) + 1;
+
+        for(int i =0;i< circle.activeSlices;i++)
+        {
+            circle.sliceRed[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+            circle.sliceBlue[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+            circle.sliceAlpha[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+            circle.sliceStart[i]= i/circle.activeSlices;
+            circle.sliceLen[i]=1.0/circle.activeSlices;
+            if(i>0)
+                circle.sliceStart[i]=circle.sliceStart[i-1]+circle.sliceLen[i];
+            circle.sliceGreen[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+
+            //rstd::cout<<"\n["<<i<<"]\nred - "<< circle.sliceRed[i]<<"\nGreen - "<< circle.sliceGreen[i]<<"\nblue -"<< circle.sliceBlue[i];
+        }
+//        firstTime=false;
    
-//    for(int i =0;i< circle.activeSlices;i++)
-//    {
-//        circle.sliceRed[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-//        circle.sliceBlue[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-//        circle.sliceAlpha[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-//        circle.sliceStart[i]= i/circle.activeSlices;
-//        circle.sliceLen[i]=1.0/circle.activeSlices;
-//        if(i>0)
-//            circle.sliceStart[i]=circle.sliceStart[i-1]+circle.sliceLen[i];
-//        circle.sliceGreen[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-//
-//        //rstd::cout<<"\n["<<i<<"]\nred - "<< circle.sliceRed[i]<<"\nGreen - "<< circle.sliceGreen[i]<<"\nblue -"<< circle.sliceBlue[i];
-//    }
-  
 }
 
 void OpenGLComponent::openGLContextClosing()

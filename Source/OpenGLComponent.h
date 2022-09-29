@@ -27,20 +27,20 @@ public:
     void newOpenGLContextCreated() override;
     void renderOpenGL() override;
     void openGLContextClosing() override;
-    
-    
-private:
-    // Create an OpenGLContext for this Component.
-    OpenGLContext openGLContext;
     struct Vertex
     {
         float position[2];
         float colour[4];
     };
+    
+private:
+    // Create an OpenGLContext for this Component.
+    OpenGLContext openGLContext;
+    
     struct Circle
     {
-        float radius;
-        float lineWidth;
+        float radius=0.0;
+        float lineWidth=0.0;
         int activeSlices = 14;
         float sliceStart[128];
         float sliceLen[128];
@@ -60,5 +60,6 @@ private:
     std::string fragmentShader;
     std::unique_ptr<OpenGLShaderProgram> shaderProgram;
     Circle circle;
+    bool firstTime=true;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OpenGLComponent)
 };
