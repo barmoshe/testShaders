@@ -32,7 +32,7 @@ public:
         float position[2];
         float colour[4];
     };
-    
+    float addAngle(float x, float y);
 private:
     // Create an OpenGLContext for this Component.
     OpenGLContext openGLContext;
@@ -61,5 +61,6 @@ private:
     std::unique_ptr<OpenGLShaderProgram> shaderProgram;
     Circle circle;
     bool firstTime=true;
+    juce::OpenGLTexture t;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OpenGLComponent)
 };
