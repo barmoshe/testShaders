@@ -164,103 +164,111 @@ void OpenGLComponent::newOpenGLContextCreated()
     
     fragmentShader =
             R"(
-            
+       
+
+
             #define PI 3.1415926538
             #define ZERO 1e-6
-            vec2 middle = vec2(0.0, 0.0);
-            uniform vec2 u_resolution;
-            uniform float radius;
-            uniform float lineWidth;
-            uniform int activeSlices;
-            uniform float sliceStart[128];
-            uniform float sliceLen[128];
-            uniform float sliceRed[128];
-            uniform float sliceGreen[128];
-            uniform float sliceBlue[128];
-            uniform float sliceAlpha[128];
-            uniform bool changed;
-            vec4 white = vec4(1.0, 1.0, 1.0, 1.0);
-            float when_gt(float x, float y) {
-            return max(sign(x - y), 0.0);
-            }
-            float when_le(float x, float y) {
-            return 1.0 - when_gt(x, y);
-            }
-            float when_lt(float x, float y) {
-            return max(sign(y - x), 0.0);
-            }
-            float when_ge(float x, float y) {
-            return 1.0 - when_lt(x, y);
-            }
-            float addAngle(float x, float y) {
-            x = x + y;
-            x = x - 1.0 * when_gt(x, 1.0);
-            x = x + 1.0 * when_lt(x, 0.0);
-            return x;
-            }
-            
-            float distanceToLine(vec2 currentP, float fraq) {
-            if(fraq == 0.25 || fraq == 0.75)
-            return abs(currentP.x);
-            float slope = tan(fraq * 2.0 * PI);
-            return (abs((slope * currentP.x) - currentP.y) / sqrt((slope * slope) + 1.0));
-            }
-            bool pointInSlice(int i, float angleOfP) {
-            return ((when_le(angleOfP, sliceStart[i]) * when_ge(angleOfP, addAngle(sliceStart[i] ,- sliceLen[i]))) == 1.0);
-            }
-            float calcAngleOfPoint(vec2 currentP) {
-            float angleOfP = atan(currentP.y, currentP.x);
-            angleOfP += when_lt(currentP.y, 0.0) * 2.0 * PI;
-            angleOfP /= (2.0 * PI);
-            return angleOfP;
-            
-            }
-            void paintPoint(int i, float distToPoint, float distanceToStart, float distanceToEnd) {
-            
-            vec4 backgroundColour = vec4(20.0 / 255.0, 20.0 / 255.0, 47.0 / 255.0, 1.0);//background
-            
-            float outerRadius = radius + lineWidth;
-            float outerRadiusBorder = outerRadius + lineWidth;
-            if(when_gt(distToPoint, outerRadiusBorder) == 1.0)//backGround
-            gl_FragColor = backgroundColour;
-            else if(when_lt(distToPoint, outerRadiusBorder) * when_lt(outerRadius, distToPoint) == 1.0)//anti aliasd border with background
-            gl_FragColor = mix(white, backgroundColour, (distToPoint - outerRadius) / (outerRadiusBorder - outerRadius));
-            else if(when_lt(distanceToStart, lineWidth / 2.0) + when_lt(distanceToEnd, lineWidth / 2.0) != 0.0)
-            gl_FragColor = white;
-            else if(when_lt(distToPoint, radius) == 1.0)
-            gl_FragColor = vec4(sliceRed[i], sliceGreen[i], sliceBlue[i], 1.0);
-            else
-            gl_FragColor = mix(vec4(sliceRed[i], sliceGreen[i], sliceBlue[i], 1.0), white, (distToPoint - radius) / (outerRadius - radius));
-            
-            }
-            void CalcNewCircle() {
-            
-            vec2 currentP = (gl_FragCoord.xy / u_resolution) - 1.0;//currnt point in x,y the middle of the axis is center of shader
-            float yOffset = u_resolution.x / u_resolution.y;
-            float distToPoint = distance(vec2(currentP.x, currentP.y / yOffset), vec2(0.0, 0.0));
-            for(int i = 0; i < activeSlices; i++) {
-            float distanceToStart = distanceToLine(currentP, sliceStart[i]);
-            float distanceToEnd = distanceToLine(currentP, addAngle(sliceStart[i] ,- sliceLen[i]));
-            float angleOfP = calcAngleOfPoint(currentP);
-            if(pointInSlice(i, angleOfP)) {
+vec2 middle = vec2(0.0, 0.0);
+uniform vec2 u_resolution;
+uniform float radius;
+uniform float lineWidth;
+uniform int activeSlices;
+uniform float sliceStart[128];
+uniform float sliceLen[128];
+uniform float sliceRed[128];
+uniform float sliceGreen[128];
+uniform float sliceBlue[128];
+uniform float sliceAlpha[128];
+uniform bool changed;
+vec4 white = vec4(1.0, 1.0, 1.0, 1.0);
+float when_gt(float x, float y) {
+    return max(sign(x - y), 0.0);
+}
+float when_le(float x, float y) {
+    return 1.0 - when_gt(x, y);
+}
+float when_lt(float x, float y) {
+    return max(sign(y - x), 0.0);
+}
+float when_ge(float x, float y) {
+    return 1.0 - when_lt(x, y);
+}
+float addAngle(float x, float y) {
+    x = x + y;
+    x = x - 1.0 * when_gt(x, 1.0);
+    x = x + 1.0 * when_lt(x, 0.0);
+    return x;
+}
+
+float distanceToLine(vec2 currentP, float fraq) {
+    if(fraq == 0.25 || fraq == 0.75)
+        return abs(currentP.x);
+    float slope = tan(fraq * 2.0 * PI);
+    return (abs((slope * currentP.x) - currentP.y) / sqrt((slope * slope) + 1.0));
+}
+bool pointInSlice(int i, float angleOfP,float currentY) {
+    if(sliceStart[i] - sliceLen[i] > 0.0)
+        return ((when_le(angleOfP, sliceStart[i]) * when_ge(angleOfP, addAngle(sliceStart[i], -sliceLen[i]))) == 1.0);
+    else if(currentY >= 0.0)
+        return ((when_le(angleOfP, sliceStart[i]) * when_ge(angleOfP, 0.0)) == 1.0);
+    else
+        return( when_ge(angleOfP, addAngle(sliceStart[i], -sliceLen[i])) == 1.0);
+}
+float calcAngleOfPoint(vec2 currentP) {
+    float angleOfP = atan(currentP.y, currentP.x);
+    angleOfP += when_lt(currentP.y, 0.0) * 2.0 * PI;
+    angleOfP /= (2.0 * PI);
+    return angleOfP;
+
+}
+void paintPoint(int i, float distToPoint, float distanceToStart, float distanceToEnd) {
+
+    vec4 backgroundColour = vec4(20.0 / 255.0, 20.0 / 255.0, 47.0 / 255.0, 1.0);//background
+
+    float outerRadius = radius + lineWidth;
+    float outerRadiusBorder = outerRadius + lineWidth;
+    if(when_gt(distToPoint, outerRadiusBorder) == 1.0)//backGround
+        gl_FragColor = backgroundColour;
+    else if(when_lt(distToPoint, outerRadiusBorder) * when_lt(outerRadius, distToPoint) == 1.0)//anti aliasd border with background
+        gl_FragColor = mix(white, backgroundColour, (distToPoint - outerRadius) / (outerRadiusBorder - outerRadius));
+    else if(when_lt(distanceToStart, lineWidth / 2.0) + when_lt(distanceToEnd, lineWidth / 2.0) != 0.0)
+        gl_FragColor = white;
+    else if(when_lt(distToPoint, radius) == 1.0)
+        gl_FragColor = vec4(sliceRed[i], sliceGreen[i], sliceBlue[i], 1.0);
+    else
+        gl_FragColor = mix(vec4(sliceRed[i], sliceGreen[i], sliceBlue[i], 1.0), white, (distToPoint - radius) / (outerRadius - radius));
+
+}
+void CalcNewCircle() {
+
+    vec2 currentP = (gl_FragCoord.xy / u_resolution) - 1.0;//currnt point in x,y the middle of the axis is center of shader
+    float yOffset = u_resolution.x / u_resolution.y;
+    float distToPoint = distance(vec2(currentP.x, currentP.y / yOffset), vec2(0.0, 0.0));
+    for(int i = 0; i < activeSlices; i++) {
+        float distanceToStart = distanceToLine(currentP, sliceStart[i]);
+        float distanceToEnd = distanceToLine(currentP, addAngle(sliceStart[i], -sliceLen[i]));
+        float angleOfP = calcAngleOfPoint(currentP);
+        if(pointInSlice(i, angleOfP,currentP.y)) {
             paintPoint(i, distToPoint, distanceToStart, distanceToEnd);
             break;
-            } else
+        } else
             gl_FragColor = gl_FragColor;
-            }
-            
-            }
-            void displayTexture() {
-            gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-            }
-            void main() {
-            if(changed)
-            CalcNewCircle();
-            else
-            displayTexture();
-            
-            }
-            
+    }
+
+}
+void displayTexture() {
+    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+}
+void main() {
+    if(changed)
+        CalcNewCircle();
+    else
+        displayTexture();
+
+}
+
+
             )";
     
     
@@ -336,25 +344,24 @@ void OpenGLComponent::renderOpenGL()
     shaderProgram->setUniform("sliceLen", circle.sliceLen,128);
     shaderProgram->setUniform("changed", firstTime);
     
+
+            circle.activeSlices=((rand() %42) + 1) ;
+    circle.sliceStart[0]= 0.75;
+    circle.sliceLen[0]=1.0/float(circle.activeSlices);
+        //circle.activeSlices=3;
+    for(int i =1;i< circle.activeSlices;i++)
+    {
+        circle.sliceRed[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+        circle.sliceBlue[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+        circle.sliceGreen[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+        circle.sliceAlpha[i]=1.0;
+        circle.sliceStart[i]=addAngle(circle.sliceStart[i-1], -circle.sliceLen[i-1]);
+        circle.sliceLen[i]=1.0/float(circle.activeSlices);
+
+
+    }
     
-    //        circle.activeSlices=((rand() %1) + 2) ;
-    //    //circle.activeSlices=3;
-    //        for(int i =0;i< circle.activeSlices;i++)
-    //        {
-    //            circle.sliceRed[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-    //            circle.sliceBlue[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-    //            circle.sliceAlpha[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-    //            circle.sliceStart[i]= i/circle.activeSlices;
-    //            circle.sliceLen[i]=1.0/circle.activeSlices;
-    //            if(i>0)
-    //                circle.sliceStart[i]=circle.sliceStart[i-1]+circle.sliceLen[i];
-    //            circle.sliceGreen[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-    //
-    //            //rstd::cout<<"\n["<<i<<"]\nred - "<< circle.sliceRed[i]<<"\nGreen - "<< circle.sliceGreen[i]<<"\nblue -"<< circle.sliceBlue[i];
-    //        }
     
-    //
-    //        firstTime=false;
     
 }
 
