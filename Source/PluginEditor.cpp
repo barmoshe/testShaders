@@ -16,8 +16,8 @@ TestShadersAudioProcessorEditor::TestShadersAudioProcessorEditor (TestShadersAud
     // Make sure that before the constructor has finished, you've set the
     // editor's size to whatever you need it to be.
     setSize (1000, 1000);
-    
-    for (auto i = 0; i < 1; ++i)
+    startTimer(500.0);
+    for (auto i = 0; i < numberOfPizzas; ++i)
     {
         openGLComponents.push_back (std::make_unique<OpenGLComponent>());
         addAndMakeVisible (*openGLComponents.back());
@@ -38,11 +38,11 @@ void TestShadersAudioProcessorEditor::paint (juce::Graphics& g)
     if(first)
         if(openGLComponents.size()>0){
             int index=0;
-            for(int row=0;row<1;row++)
+            for(int row=0;row<5;row++)
             {
-                for(int col=0;col<1;col++)
+                for(int col=0;col<5;col++)
                 {
-                    openGLComponents.at(index)->setBounds(col*200,row*200, 1000, 1000);
+                    openGLComponents.at(index)->setBounds(col*200,row*200, 200, 200);
                     index+=1;
                 }
             }
@@ -52,7 +52,16 @@ void TestShadersAudioProcessorEditor::paint (juce::Graphics& g)
         }
     
 }
+void TestShadersAudioProcessorEditor::trigerRandom(){
+    if(index>=numberOfPizzas)
+        index=0;
+    openGLComponents.at(index)->setRandom(true);
+    openGLComponents.at(lastTriggerd)->setRandom(false);
+    lastTriggerd=index;
+    index++;
 
+
+}
 void TestShadersAudioProcessorEditor::resized()
 {
     if(openGLComponents.size()>0){

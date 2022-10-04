@@ -34,34 +34,40 @@ OpenGLComponent::OpenGLComponent()
     openGLContext.attachTo(*this);
     //openGLContext.setOpenGLVersionRequired(OpenGLContext::OpenGLVersion::openGL3_2)
     
-    circle.radius=0.5;
+    circle.radius=0.7;
     circle.lineWidth=0.044*circle.radius;
-    circle.activeSlices=5;
+    circle.activeSlices=((rand() %8) + 1) ;
     circle.sliceStart[0]= 0.75;
     circle.sliceLen[0]=1.0/float(circle.activeSlices);
-    for(int i =1;i< circle.activeSlices;i++)
+    for(int i =1;i< circle.activeSlices-1;i++)
     {
-        circle.sliceRed[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-        circle.sliceBlue[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-        circle.sliceGreen[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-        circle.sliceAlpha[i]=1.0;
-        circle.sliceStart[i]=addAngle(circle.sliceStart[i-1], -circle.sliceLen[i-1]);
-        circle.sliceLen[i]=1.0/float(circle.activeSlices);
         
-        
+            circle.sliceRed[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+            circle.sliceBlue[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+            circle.sliceGreen[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+            circle.sliceAlpha[i]=1.0;
+       
+            circle.sliceStart[i]=addAngle(circle.sliceStart[i-1], -circle.sliceLen[i-1]);
+            circle.sliceLen[i]=1.0/float(circle.activeSlices);
+        if(i==circle.activeSlices-2){
+            circle.sliceStart[i+1]=addAngle(circle.sliceStart[i], -circle.sliceLen[i]);
+            circle.sliceLen[i+1]=1.0/float(circle.activeSlices);
+        }
         
     }
     //    circle.sliceRed[1]=1.0;
     //    circle.sliceBlue[1]=0.0;
     //    circle.sliceGreen[1]=0.0;
-       circle.sliceRed[0]=1.0;
-        circle.sliceBlue[0]=0.0;
-        circle.sliceGreen[0]=0.0;
-      //  circle.sliceStart[0]= 0.75;
+           circle.sliceRed[0]=1.0;
+            circle.sliceBlue[0]=0.0;
+            circle.sliceGreen[0]=0.0;
+        circle.sliceRed[circle.activeSlices-1]=0.0;
+         circle.sliceBlue[circle.activeSlices-1]=1.0;
+         circle.sliceGreen[circle.activeSlices-1]=0.0;
+    //  circle.sliceStart[0]= 0.75;
     //    circle.sliceLen[0]=(2.0/4.0);
     //    circle.sliceStart[1]=0.25;
     //    circle.sliceLen[1]=(1.0/2.0);
-    
     
     for(int i =0;i< circle.activeSlices;i++)
     {
@@ -86,9 +92,12 @@ float OpenGLComponent::addAngle(float x, float y) {
 void OpenGLComponent::paint (juce::Graphics& g)
 {
 }
-
+void OpenGLComponent::setChange(bool changed){
+    isChanged=changed;
+}
 void OpenGLComponent::newOpenGLContextCreated()
 {
+    
     
     // Generate 1 buffer, using our vbo variable to store its ID.
     openGLContext.extensions.glGenBuffers(1, &vertexBufferObj);
@@ -164,6 +173,7 @@ void OpenGLComponent::newOpenGLContextCreated()
     
     fragmentShader =
             R"(
+  
 
             #define PI 3.1415926538
             #define ZERO 1e-6
@@ -205,14 +215,15 @@ float distanceToLine(vec2 currentP, float fraq) {
     float slope = tan(fraq * 2.0 * PI);
     return (abs((slope * currentP.x) - currentP.y) / sqrt((slope * slope) + 1.0));
 }
-bool pointInSlice(int i, float angleOfP, float currentY) {
-    if(sliceStart[i] - sliceLen[i] > 0.0)
+bool pointInSlice(int i, float angleOfP) {
+    if(!(sliceStart[i] <= 0.25 && addAngle(sliceStart[i], -sliceLen[i]) >= 0.75))
         return ((when_le(angleOfP, sliceStart[i]) * when_ge(angleOfP, addAngle(sliceStart[i], -sliceLen[i]))) == 1.0);
-    else if(currentY >= 0.0)
+    else if(angleOfP >= 0.0 && angleOfP <= 0.25)
         return ((when_le(angleOfP, sliceStart[i]) * when_ge(angleOfP, 0.0)) == 1.0);
     else
-        return (when_ge(angleOfP, addAngle(sliceStart[i], -sliceLen[i])) == 1.0);
+        return ((when_le(angleOfP, 1.0) * when_ge(angleOfP, addAngle(sliceStart[i], -sliceLen[i]))) == 1.0);
 }
+
 float calcAngleOfPoint(vec2 currentP) {
     float angleOfP = atan(currentP.y, currentP.x);
     angleOfP += when_lt(currentP.y, 0.0) * 2.0 * PI;
@@ -238,7 +249,7 @@ void paintPoint(int i, float distToPoint, float distanceToStart, float distanceT
         gl_FragColor = mix(vec4(sliceRed[i], sliceGreen[i], sliceBlue[i], 1.0), white, (distToPoint - radius) / (outerRadius - radius));
 
 }
-void paintPointNoSlices(int i,float distToPoint ) {
+void paintPointNoSlices(int i, float distToPoint) {
 
     vec4 backgroundColour = vec4(20.0 / 255.0, 20.0 / 255.0, 47.0 / 255.0, 1.0);//background
 
@@ -246,6 +257,40 @@ void paintPointNoSlices(int i,float distToPoint ) {
     float outerRadiusBorder = outerRadius + lineWidth;
     if(when_gt(distToPoint, outerRadiusBorder) == 1.0)//backGround
         gl_FragColor = backgroundColour;
+    else if(when_lt(distToPoint, outerRadiusBorder) * when_lt(outerRadius, distToPoint) == 1.0)//anti aliasd border with background
+        gl_FragColor = mix(white, backgroundColour, (distToPoint - outerRadius) / (outerRadiusBorder - outerRadius));
+    else if(when_lt(distToPoint, radius) == 1.0)
+        gl_FragColor = vec4(sliceRed[0], sliceGreen[0], sliceBlue[0], 1.0);
+    else
+        gl_FragColor = mix(vec4(sliceRed[0], sliceGreen[0], sliceBlue[0], 1.0), white, (distToPoint - radius) / (outerRadius - radius));
+
+}
+void paintPointNoSlices(float distToPoint) {
+
+    vec4 backgroundColour = vec4(20.0 / 255.0, 20.0 / 255.0, 47.0 / 255.0, 1.0);//background
+
+    float outerRadius = radius + lineWidth;
+    float outerRadiusBorder = outerRadius + lineWidth;
+    if(when_gt(distToPoint, outerRadiusBorder) == 1.0)//backGround
+        gl_FragColor = backgroundColour;
+    else if(when_lt(distToPoint, outerRadiusBorder) * when_lt(outerRadius, distToPoint) == 1.0)//anti aliasd border with background
+        gl_FragColor = mix(white, backgroundColour, (distToPoint - outerRadius) / (outerRadiusBorder - outerRadius));
+    else if(when_lt(distToPoint, radius) == 1.0)
+        gl_FragColor = vec4(sliceRed[0], sliceGreen[0], sliceBlue[0], 1.0);
+    else
+        gl_FragColor = mix(vec4(sliceRed[0], sliceGreen[0], sliceBlue[0], 1.0), white, (distToPoint - radius) / (outerRadius - radius));
+
+}
+void paintPoint2Slices(float distToPoint) {
+
+    vec4 backgroundColour = vec4(20.0 / 255.0, 20.0 / 255.0, 47.0 / 255.0, 1.0);//background
+
+    float outerRadius = radius + lineWidth;
+    float outerRadiusBorder = outerRadius + lineWidth;
+    if(when_gt(distToPoint, outerRadiusBorder) == 1.0)//backGround
+        gl_FragColor = backgroundColour;
+    else if(when_lt(distToPoint, outerRadiusBorder) * when_lt(outerRadius, distToPoint) == 1.0)//anti aliasd border with background
+        gl_FragColor = mix(white, backgroundColour, (distToPoint - outerRadius) / (outerRadiusBorder - outerRadius));
     else if(when_lt(distToPoint, radius) == 1.0)
         gl_FragColor = vec4(sliceRed[0], sliceGreen[0], sliceBlue[0], 1.0);
     else
@@ -257,19 +302,21 @@ void CalcNewCircle() {
     vec2 currentP = (gl_FragCoord.xy / u_resolution) - 1.0;//currnt point in x,y the middle of the axis is center of shader
     float yOffset = u_resolution.x / u_resolution.y;
     float distToPoint = distance(vec2(currentP.x, currentP.y / yOffset), vec2(0.0, 0.0));
-    if(activeSlices > 1)
+    if(activeSlices == 1)
+        paintPointNoSlices(distToPoint);
+    else if(activeSlices == 2)
+        paintPoint2Slices(distToPoint);
+    else
         for(int i = 0; i < activeSlices; i++) {
             float distanceToStart = distanceToLine(currentP, sliceStart[i]);
             float distanceToEnd = distanceToLine(currentP, addAngle(sliceStart[i], -sliceLen[i]));
             float angleOfP = calcAngleOfPoint(currentP);
-            if(pointInSlice(i, angleOfP, currentP.y)) {
+            if(pointInSlice(i, angleOfP)) {
                 paintPoint(i, distToPoint, distanceToStart, distanceToEnd);
                 break;
             } else
                 gl_FragColor = gl_FragColor;
-        } else
-        paintPointNoSlices(0,distToPoint);
-
+        }
 }
 void displayTexture() {
     gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
@@ -281,7 +328,6 @@ void main() {
         displayTexture();
 
 }
-
             )";
     
     
@@ -306,6 +352,10 @@ void main() {
         // Check the output window of your IDE to see what the error might be.
         jassertfalse;
     }
+    
+}
+void OpenGLComponent::setRandom(bool b){
+    randomaizeSwitch=b;
     
 }
 
@@ -346,7 +396,7 @@ void OpenGLComponent::renderOpenGL()
                    );
     
     openGLContext.extensions.glDisableVertexAttribArray(0);
-    shaderProgram->setUniform("u_resolution",   1000.0, 1000.0);
+    shaderProgram->setUniform("u_resolution",   200.0, 200.0);
     shaderProgram->setUniform("radius", circle.radius);
     shaderProgram->setUniform("lineWidth", circle.lineWidth);
     shaderProgram->setUniform("activeSlices", circle.activeSlices);
@@ -355,26 +405,38 @@ void OpenGLComponent::renderOpenGL()
     shaderProgram->setUniform("sliceBlue", circle.sliceBlue,128);
     shaderProgram->setUniform("sliceGreen", circle.sliceGreen,128);
     shaderProgram->setUniform("sliceLen", circle.sliceLen,128);
-    shaderProgram->setUniform("changed", firstTime);
+    shaderProgram->setUniform("changed", isChanged);
     
-
-            circle.activeSlices=((rand() %5) + 1) ;
-    circle.sliceStart[0]= 0.75;
-    circle.sliceLen[0]=1.0/float(circle.activeSlices);
+    if(randomaizeSwitch){
+        circle.activeSlices=((rand() %16) + 1) ;
+        circle.sliceLen[0]=1.0/float(circle.activeSlices);
         //circle.activeSlices=3;
-    for(int i =1;i< circle.activeSlices;i++)
-    {
-        circle.sliceRed[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-        circle.sliceBlue[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-        circle.sliceGreen[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-        circle.sliceAlpha[i]=1.0;
-        circle.sliceStart[i]=addAngle(circle.sliceStart[i-1], -circle.sliceLen[i-1]);
-        circle.sliceLen[i]=1.0/float(circle.activeSlices);
-
-
+        for(int i =1;i< circle.activeSlices-1;i++)
+        {
+            
+                circle.sliceRed[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+                circle.sliceBlue[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+                circle.sliceGreen[i]=static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+                circle.sliceAlpha[i]=1.0;
+           
+                circle.sliceStart[i]=addAngle(circle.sliceStart[i-1], -circle.sliceLen[i-1]);
+                circle.sliceLen[i]=1.0/float(circle.activeSlices);
+            if(i==circle.activeSlices-2){
+                circle.sliceStart[i+1]=addAngle(circle.sliceStart[i], -circle.sliceLen[i]);
+                circle.sliceLen[i+1]=1.0/float(circle.activeSlices);
+            }
+            
+        }
+        circle.sliceRed[0]=1.0;
+         circle.sliceBlue[0]=0.0;
+         circle.sliceGreen[0]=0.0;
+     circle.sliceRed[circle.activeSlices-1]=0.0;
+      circle.sliceBlue[circle.activeSlices-1]=1.0;
+      circle.sliceGreen[circle.activeSlices-1]=0.0;
+        circle.sliceRed[circle.activeSlices-2]=0.0;
+         circle.sliceBlue[circle.activeSlices-2]=0.0;
+         circle.sliceGreen[circle.activeSlices-2]=1.0;
     }
-    
-    
     
 }
 

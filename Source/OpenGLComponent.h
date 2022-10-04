@@ -33,6 +33,9 @@ public:
         float colour[4];
     };
     float addAngle(float x, float y);
+    void setChange(bool Changed);
+    void setRandom(bool b);
+
 private:
     // Create an OpenGLContext for this Component.
     OpenGLContext openGLContext;
@@ -60,7 +63,9 @@ private:
     std::string fragmentShader;
     std::unique_ptr<OpenGLShaderProgram> shaderProgram;
     Circle circle;
-    bool firstTime=true;
+    bool isChanged=true;
+    bool randomaizeSwitch=false;
+
     juce::OpenGLTexture t;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR (OpenGLComponent)
 };
